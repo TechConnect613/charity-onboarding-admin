@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Onboard Charity</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #1a1a2e;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0 16px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        label {
+            font-weight: 500;
+            font-size: 14px;
+            color: #333;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        button:hover {
+            background: #43a047;
+        }
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 24px;
+            padding: 16px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result.success {
+            background: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+        }
+        .result.error {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+        .result .link-box {
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            word-break: break-all;
+            font-size: 13px;
+            margin: 12px 0;
+            border: 1px solid #ddd;
+        }
+        .result .copy-btn {
+            background: #2196F3;
+            padding: 8px 16px;
+            font-size: 13px;
+            width: auto;
+            margin-top: 0;
+        }
+        .result .copy-btn:hover {
+            background: #1976D2;
+        }
+        .result .note {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 16px 0;
+            color: #666;
+        }
+        .loading.show {
+            display: block;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ddd;
+            border-top-color: #4CAF50;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .footer {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+        .admin-note {
+            background: #fff3cd;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 Onboard Charity</h1>
+        <p class="subtitle">Generate a Stripe onboarding link for a new charity</p>
+        
+        <div class="admin-note">
+            ⚠️ This tool is for admins only. The charity will complete KYC on Stripe's secure page.
+        </div>
+        
+        <form id="onboardingForm">
+            <label for="name">Charity Name *</label>
+            <input type="text" id="name" placeholder="e.g., Helping Hands Foundation" required>
+            
+            <label for="email">Charity Email *</label>
+            <input type="email" id="email" placeholder="charity@example.com" required>
+            
+            <label for="description">Charity Description</label>
+            <textarea id="description" placeholder="Brief description of the charity's mission..."></textarea>
+            
+            <button type="submit" id="submitBtn">🔗 Generate Onboarding Link</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <span class="spinner"></span> Creating account...
+        </div>
+        
+        <div class="result" id="result">
+            <div id="resultContent"></div>
+        </div>
+        
+        <div class="footer">
+            Admin Portal · Secured by Firebase &amp; Stripe
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('onboardingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const description = document.getElementById('description').value.trim();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            // Reset
+            result.classList.remove('show', 'success', 'error');
+            resultContent.innerHTML = '';
+            
+            // Show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Processing...';
+            loading.classList.add('show');
+            
+            try {
+                // Call your Firebase Function via a proxy endpoint
+                // REPLACE THIS URL WITH YOUR ACTUAL BACKEND URL
+                const response = await fetch('https://us-central1-espnew-61d02.cloudfunctions.net/createConnectAccount', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email, 
+                        name, 
+                        description 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.onboardingUrl) {
+                    result.className = 'result show success';
+                    resultContent.innerHTML = `
+                        <strong>✅ Onboarding link created!</strong>
+                        <div class="link-box">${data.onboardingUrl}</div>
+                        <button class="copy-btn" onclick="copyLink('${data.onboardingUrl}')">📋 Copy Link</button>
+                        <p class="note">📤 Send this link to the charity. They will complete KYC on Stripe's secure page.</p>
+                        <p class="note" style="margin-top:4px;">🆔 Charity ID: ${data.charityId || 'N/A'}</p>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Something went wrong');
+                }
+            } catch (error) {
+                result.className = 'result show error';
+                resultContent.innerHTML = `
+                    <strong>❌ Error</strong>
+                    <p style="margin-top:8px;font-size:14px;">${error.message}</p>
+                    <p style="font-size:12px;color:#666;margin-top:8px;">Make sure your Firebase Function is deployed and accessible.</p>
+                `;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔗 Generate Onboarding Link';
+                loading.classList.remove('show');
+            }
+        });
+        
+        function copyLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            }).catch(() => {
+                alert('Copy manually: ' + url);
+            });
+        }
+    </script>
+</body>
+</html>
