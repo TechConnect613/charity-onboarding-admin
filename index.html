@@ -219,11 +219,13 @@
             loading.classList.add('show');
             
             try {
-                // Call your Firebase Function via a proxy endpoint
-                // REPLACE THIS URL WITH YOUR ACTUAL BACKEND URL
-                const response = await fetch('https://us-central1-espnew-61d02.cloudfunctions.net/createConnectAccount', {
+                // ✅ FIXED: Using adminOnboard (not createConnectAccount)
+                const response = await fetch('https://us-central1-espnew-61d02.cloudfunctions.net/adminOnboard', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify({ 
                         email, 
                         name, 
@@ -233,7 +235,7 @@
                 
                 const data = await response.json();
                 
-                if (response.ok && data.onboardingUrl) {
+                if (response.ok && data.success) {
                     result.className = 'result show success';
                     resultContent.innerHTML = `
                         <strong>✅ Onboarding link created!</strong>
@@ -246,11 +248,15 @@
                     throw new Error(data.error || 'Something went wrong');
                 }
             } catch (error) {
+                console.error('❌ Error:', error);
                 result.className = 'result show error';
                 resultContent.innerHTML = `
                     <strong>❌ Error</strong>
                     <p style="margin-top:8px;font-size:14px;">${error.message}</p>
-                    <p style="font-size:12px;color:#666;margin-top:8px;">Make sure your Firebase Function is deployed and accessible.</p>
+                    <p style="font-size:12px;color:#666;margin-top:8px;">
+                        Make sure your Firebase Function is deployed and accessible.<br>
+                        Function: https://us-central1-espnew-61d02.cloudfunctions.net/adminOnboard
+                    </p>
                 `;
             } finally {
                 submitBtn.disabled = false;
